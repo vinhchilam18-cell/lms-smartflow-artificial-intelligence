@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LMS SmartFlow AI — Hệ thống Quản lý & Nhắc hạn Bài tập LMS</title>
+  <!-- Nạp phông chữ Be Vietnam Pro và bộ biểu tượng Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Be Vietnam Pro', sans-serif; background-color: #f1f5f9; color: #0f172a; }
+    .nav-tab.active { background-color: #1e3a8a; color: #ffffff; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25); }
+    .role-card.selected { border-color: #2563eb; background-color: #eff6ff; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+    .flt-chip.active { background-color: #dbeafe; color: #1e40af; border-color: #3b82f6; font-weight: 700; }
+    .fade-in { animation: fadeIn 0.25s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Khung thông báo nổi (Thay thế hoàn toàn hộp thoại mặc định trình duyệt) -->
+  <div id="toastBox" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ==================== MÀN HÌNH ĐĂNG NHẬP HỆ THỐNG ==================== -->
+  <div id="loginScreen" class="min-h-screen w-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden grid grid-cols-1 lg:grid-cols-12 fade-in">
+      <!-- Cột giới thiệu dự án bên trái -->
+      <div class="lg:col-span-5 bg-gradient-to-br from-blue-900 to-indigo-900 text-white p-7 flex flex-col justify-between">
+        <div class="space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold">
+            <i class="fa-solid fa-graduation-cap text-amber-300"></i>Vinschool Times City • Tin học 8
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight">LMS SmartFlow <span class="text-sky-300">AI</span></h1>
+          <p class="text-xs sm:text-sm text-blue-100 leading-relaxed">
+            Nguyên mẫu hỗ trợ quản lý tiến độ, cảnh báo tệp nháp quên bấm nộp, điều phối sớm và bảo vệ sức khỏe tinh thần học sinh theo nguyên tắc <b>Con người làm chủ quyết định</b>.
+          </p>
+          <div class="space-y-2 pt-2 text-xs text-blue-100">
+            <div class="flex items-center gap-2"><i class="fa-solid fa-shield-halved text-emerald-300"></i><span>Mã hóa định danh trẻ em (<code>#TK-HS801</code>)</span></div>
+            <div class="flex items-center gap-2"><i class="fa-solid fa-ban text-amber-300"></i><span>Zero-Data Retention: Không lưu bài làm train AI</span></div>
+            <div class="flex items-center gap-2"><i class="fa-solid fa-moon text-indigo-300"></i><span>Lá chắn Wellbeing khóa chuông 21:30 – 06:30</span></div>
+          </div>
+        </div>
+        <div class="pt-6 border-t border-white/15 text-xs text-blue-200">
+          Nhóm 1 · Lớp 8A7: <b>Lâm Chí Vinh</b> (VS045082) & <b>Nguyễn Nho Gia Huy</b> (VS082952)
+        </div>
+      </div>
+
+      <!-- Cột biểu mẫu đăng nhập phân quyền bên phải -->
+      <div class="lg:col-span-7 p-7 space-y-4">
+        <div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Đăng nhập Cổng LMS SmartFlow AI</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Chọn vai trò người dùng để trải nghiệm đúng phân khu chức năng trong báo cáo:</p>
+        </div>
+
+        <!-- Bộ thẻ chọn nhanh 3 nhóm User -->
+        <div class="space-y-2">
+          <button type="button" id="card-student" onclick="selectLoginRole('student')" class="role-card selected w-full text-left p-3 rounded-2xl border border-slate-200 transition flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-user-graduate"></i></div>
+              <div>
+                <p class="text-sm font-bold text-slate-900">Học sinh: Lâm Chí Vinh (Lớp 8A / Nhóm 1 - 8A7)</p>
+                <p class="text-xs text-slate-500">Gộp 5 lớp LMS • Cảnh báo nháp quên nộp • Thanh tiến độ 5 cấp độ</p>
+              </div>
+            </div>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">User 1</span>
+          </button>
+
+          <button type="button" id="card-teacher" onclick="selectLoginRole('teacher')" class="role-card w-full text-left p-3 rounded-2xl border border-slate-200 transition flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-chalkboard-user"></i></div>
+              <div>
+                <p class="text-sm font-bold text-slate-900">Giáo viên Bộ môn & Giáo viên Chủ nhiệm</p>
+                <p class="text-xs text-slate-500">Cảnh báo sớm 48h (Mức 0) • Hộp thư nộp bù 8A1–8A3 • Bản đồ tuần</p>
+              </div>
+            </div>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">User 2</span>
+          </button>
+
+          <button type="button" id="card-admin" onclick="selectLoginRole('admin')" class="role-card w-full text-left p-3 rounded-2xl border border-slate-200 transition flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-user-shield"></i></div>
+              <div>
+                <p class="text-sm font-bold text-slate-900">Nhân viên Quản trị LMS & Tâm lý Wellbeing</p>
+                <p class="text-xs text-slate-500">Kiểm soát Zero-Data, mã hóa #TK-HS801 & Khóa thông báo đêm 21:30</p>
+              </div>
+            </div>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">User 3</span>
+          </button>
+        </div>
+
+        <!-- Ô tài khoản & mật khẩu điền tự động để thuận tiện kiểm thử -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Mã tài khoản định danh</label>
+            <input id="loginUserInp" type="text" value="VS045082 (Token: #TK-HS801)" class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 font-medium text-slate-800">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Mật khẩu xác thực mẫu</label>
+            <input id="loginPassInp" type="password" value="••••••••" class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl px-3 py-2 bg-slate-50">
+          </div>
+        </div>
+
+        <button type="button" onclick="handleLogin()" class="w-full py-3 rounded-2xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-sm shadow-lg transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i>Đăng nhập vào Không gian Làm việc
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== GIAO DIỆN CHÍNH SAU ĐĂNG NHẬP ==================== -->
+  <div id="appWorkspace" class="hidden min-h-screen flex flex-col">
+    <!-- Thanh tiêu đề & điều khiển toàn cục -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-blue-900 text-white flex items-center justify-center shadow shrink-0">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-extrabold text-slate-900">LMS SmartFlow <span class="text-blue-700">AI</span></h1>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">Prototype v2.0</span>
+            </div>
+            <p id="activeUserLabel" class="text-xs text-slate-600 font-medium"></p>
+          </div>
+        </div>
+
+        <!-- Cụm nút Giả lập đồng hồ ngày/đêm, Hàng đợi thông báo & Đăng xuất -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
+            <button id="clockDayBtn" onclick="setSimClock('day')" class="text-xs font-bold px-2.5 py-1.5 rounded-lg bg-amber-500 text-white transition">
+              <i class="fa-solid fa-sun mr-1"></i>16:20 Chiều
+            </button>
+            <button id="clockNightBtn" onclick="setSimClock('night')" class="text-xs font-bold px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-white transition">
+              <i class="fa-solid fa-moon mr-1"></i>22:45 Tối
+            </button>
+          </div>
+
+          <button onclick="openModal('queueModal')" class="text-xs font-bold px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 transition">
+            <i class="fa-solid fa-bell mr-1"></i>Hàng đợi 06:30: <span id="queueCountBadge" class="px-1.5 py-0.5 rounded-full bg-indigo-700 text-white text-[11px]">2</span>
+          </button>
+
+          <button onclick="handleLogout()" class="text-xs font-bold px-3 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 border border-slate-200 transition">
+            <i class="fa-solid fa-power-off mr-1"></i>Đổi vai trò / Đăng xuất
+          </button>
+        </div>
+      </div>
+
+      <!-- Thanh điều hướng 4 Phân khu rõ ràng -->
+      <div class="max-w-7xl mx-auto px-4 pb-2.5 flex overflow-x-auto gap-2">
+        <button id="tabBtn-student" onclick="switchSection('student')" class="nav-tab active whitespace-nowrap text-xs sm:text-sm font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-700 transition">
+          <i class="fa-solid fa-laptop-file mr-1.5"></i>1. Phân khu Học sinh
+        </button>
+        <button id="tabBtn-teacher" onclick="switchSection('teacher')" class="nav-tab whitespace-nowrap text-xs sm:text-sm font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-700 transition">
+          <i class="fa-solid fa-chalkboard-user mr-1.5"></i>2. Phân khu Giáo viên & GVCN
+        </button>
+        <button id="tabBtn-admin" onclick="switchSection('admin')" class="nav-tab whitespace-nowrap text-xs sm:text-sm font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-700 transition">
+          <i class="fa-solid fa-shield-heart mr-1.5"></i>3. Quản trị LMS & Wellbeing
+        </button>
+        <button id="tabBtn-mtb" onclick="switchSection('mtb')" class="nav-tab whitespace-nowrap text-xs sm:text-sm font-bold px-4 py-2 rounded-xl bg-slate-100 text-slate-700 transition">
+          <i class="fa-solid fa-clipboard-check mr-1.5"></i>4. Đối chiếu 7 MTB & User
+        </button>
+      </div>
+
+      <!-- Băng rôn Lá chắn Wellbeing ban đêm (Hiện tự động khi đồng hồ là 22:45 Tối & bật Quiet Hours) -->
+      <div id="nightShieldBanner" class="hidden bg-indigo-950 text-indigo-100 border-t border-indigo-800">
+        <div class="max-w-7xl mx-auto px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2">
+          <span><i class="fa-solid fa-moon text-amber-300 mr-1.5"></i><b>Đang kích hoạt Lá chắn Wellbeing (Đồng hồ giả lập: 22:45 tối):</b> Chặn toàn bộ chuông nhắc bài sau 21:30 để bảo vệ giấc ngủ học sinh (MTB 1.1.d).</span>
+          <span class="font-bold text-amber-300">Tự động chuyển sang phát lúc 06:30 sáng</span>
+        </div>
+      </div>
+
+      <!-- Thanh cam kết Bảo vệ dữ liệu trẻ em & Sở hữu trí tuệ -->
+      <div class="bg-slate-50 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-1.5 text-[11px] text-slate-600 flex flex-wrap items-center justify-between gap-2">
+          <span><b class="text-slate-800">🔐 Pháp lý (Điều 29 Luật ANM, NĐ 13/2023 & Luật SHTT):</b> Mã hóa định danh học sinh thành Token nội bộ (<code>#TK-HS801</code>) • <b>Zero-Data Retention:</b> Không lưu bài làm để train AI.</span>
+          <span class="text-blue-800 font-semibold">Nguyên mẫu mô phỏng trực tiếp trên trình duyệt</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- KHÔNG GIAN NỘI DUNG 4 PHÂN KHU -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-5 space-y-6">
+
+      <!-- ==================== PHÂN KHU 1: HỌC SINH ==================== -->
+      <section id="sec-student" class="space-y-4 fade-in">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">Học kỳ I • Tuần Ôn tập & Dự án</span>
+              <span id="selfRegBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">🧠 Chế độ Rèn tự giác: ĐANG TẮT</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Xin chào, Lâm Chí Vinh (Lớp 8A · Mã <code>#TK-HS801</code>)! 👋</h2>
+            <p class="text-xs sm:text-sm text-slate-600">Hệ thống đã gom <b>6 nhiệm vụ từ 5 lớp học LMS</b> về chung một bảng điều khiển để bạn chủ động sắp xếp lịch học.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="toggleSelfReg()" class="text-xs font-bold px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition">
+              <i class="fa-solid fa-brain mr-1"></i>Bật/Tắt Rèn tự giác (Ẩn gợi ý máy)
+            </button>
+            <button onclick="openExceptionModal()" class="text-xs font-bold px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 transition">
+              <i class="fa-solid fa-pen-nib mr-1"></i>Ghi chú ngoại lệ 1 chạm
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Thẻ chỉ số tổng quan (KPI Cards) -->
+        <div id="studentKpiGrid" class="grid grid-cols-2 lg:grid-cols-4 gap-3.5"></div>
+
+        <!-- Hộp cảnh báo phát hiện tải tệp nháp nhưng quên bấm Nộp -->
+        <div id="draftWarningBox"></div>
+
+        <!-- Bộ lọc môn học & Chú giải Thanh tiến độ 5 cấp độ -->
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button id="flt-all" onclick="setStudentFilter('all')" class="flt-chip active text-xs px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700">Tất cả (5 lớp LMS)</button>
+            <button id="flt-group" onclick="setStudentFilter('group')" class="flt-chip text-xs px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700">Bài tập Nhóm (Chí Vinh & Gia Huy)</button>
+            <button id="flt-draft" onclick="setStudentFilter('draft')" class="flt-chip text-xs px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700">Nháp quên bấm Nộp / Cần ưu tiên</button>
+          </div>
+          <span class="text-xs text-slate-500 font-medium"><i class="fa-solid fa-bars-progress text-blue-700 mr-1"></i><b>Cải tiến:</b> Thay nhãn "Chưa nộp" bằng <b>Thanh tiến độ 5 cấp độ</b> & nút tự đổi thứ tự <code>↑ ↓</code></span>
+        </div>
+
+        <!-- Danh sách thẻ nhiệm vụ Học sinh -->
+        <div id="studentTaskList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+      </section>
+
+      <!-- ==================== PHÂN KHU 2: GIÁO VIÊN & GVCN ==================== -->
+      <section id="sec-teacher" class="hidden space-y-5 fade-in">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">⚖️ Nguyên tắc Human-in-the-loop (MTB 1.1.b & 1.3.d)</span>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">Bảng Điều phối Sớm Dành cho Giáo viên Bộ môn & GVCN</h2>
+            <p class="text-xs sm:text-sm text-slate-600">Hệ thống chỉ lọc tín hiệu hỗ trợ trước hạn 48h và gom bài nộp bù; <b>Giáo viên giữ 100% quyền quyết định gia hạn và chấm điểm</b>.</p>
+          </div>
+          <div class="text-xs font-bold space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-emerald-800">
+            <div>✓ Không tự động trừ điểm học sinh</div>
+            <div>✓ Không bêu tên công khai trên lớp</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- 1. Cảnh báo sớm trước hạn nộp 48 giờ -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div>
+              <span class="text-xs font-bold text-amber-700 uppercase">Chủ động hỗ trợ trước giờ G</span>
+              <h3 class="text-base font-extrabold text-slate-900">1. Cảnh báo sớm trước hạn nộp 48 giờ</h3>
+              <p class="text-xs text-slate-500">Tự động lọc học sinh đang ở Mức 0 (Chưa mở đề) & nhóm bị nghẽn tiến độ (Nếu gửi sau 21:30 tối sẽ giữ lại phát lúc 06:30 sáng).</p>
+            </div>
+            <div id="earlyWarningContainer" class="space-y-3"></div>
+          </div>
+
+          <!-- 2. Hộp thư Bài vừa nộp bổ sung đa lớp -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div>
+              <span class="text-xs font-bold text-blue-700 uppercase">Xóa bỏ rà soát thủ công từng lớp</span>
+              <h3 class="text-base font-extrabold text-slate-900">2. Hộp thư Bài vừa nộp bổ sung (Lớp 8A1, 8A2, 8A3)</h3>
+              <p class="text-xs text-slate-500">Gom tập trung các trường hợp nộp bù kèm lý do cá nhân chính đáng để Giáo viên xét duyệt nhân văn tại một nơi.</p>
+            </div>
+            <div id="suppInboxContainer" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- 3. Bản đồ Điều phối Khối lượng Bài tập Tuần -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-xs font-bold text-indigo-700 uppercase">Dành cho GVCN & Tổ bộ môn</span>
+              <h3 class="text-base font-extrabold text-slate-900">3. Bản đồ Điều phối Khối lượng Bài tập Tuần Cuối HK1 — Lớp 8A</h3>
+              <p class="text-xs text-slate-500">Phát hiện sớm ngày bị nhiều môn giao trùng hạn vượt ngưỡng tự học an toàn (<b>3,0 giờ/buổi tối</b>) để giãn lịch kịp thời.</p>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200">Ngưỡng an toàn: ≤ 3,0 giờ/tối</span>
+          </div>
+          <div id="workloadMapGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PHÂN KHU 3: QUẢN TRỊ LMS & WELLBEING ==================== -->
+      <section id="sec-admin" class="hidden space-y-5 fade-in">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Cột CNTT: An ninh mạng, SHTT & Tối ưu tài nguyên -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div>
+              <span class="text-xs font-bold text-blue-700 uppercase">Quản trị Hệ thống LMS (CNTT)</span>
+              <h3 class="text-base sm:text-lg font-extrabold text-slate-900">Kiểm soát Bảo mật, SHTT & Vận hành Nhẹ</h3>
+              <p class="text-xs text-slate-600 mt-1">
+                Định hướng kỹ thuật trung thực: Các tác vụ gộp hạn nộp, đếm thời gian, lọc Mức 0 và cập nhật Thanh tiến độ 5 cấp độ vận hành bằng <b>quy tắc lập trình nhẹ</b>, tránh lạm dụng gọi AI liên tục gây lãng phí tài nguyên.
+              </p>
+            </div>
+
+            <div class="space-y-2.5">
+              <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+                <div>
+                  <p class="text-xs sm:text-sm font-bold text-slate-900">Zero-Data Retention (Bảo vệ Sở hữu trí tuệ)</p>
+                  <p class="text-xs text-slate-500">Xóa bộ nhớ đệm ngay sau bước Pre-check; cấm lưu bài làm HS để train AI</p>
+                </div>
+                <span class="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 shrink-0">ĐANG BẬT</span>
+              </div>
+              <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+                <div>
+                  <p class="text-xs sm:text-sm font-bold text-slate-900">Mã hóa Token Dữ liệu Trẻ em (Luật ANM & NĐ 13/2023)</p>
+                  <p class="text-xs text-slate-500">Chuyển họ tên thật thành mã nội bộ (VD: <code>#TK-HS801</code>) trước khi xử lý</p>
+                </div>
+                <span class="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 shrink-0">ĐÃ MÃ HÓA</span>
+              </div>
+              <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 flex items-center justify-between gap-2">
+                <div>
+                  <p class="text-xs sm:text-sm font-bold text-slate-900">Công cụ Ghi chú Ngoại lệ 1 chạm (Dự phòng lỗi)</p>
+                  <p class="text-xs text-slate-500">Đồng bộ tay khi giáo viên giao đề bằng ảnh chụp mờ hoặc đổi hạn miệng</p>
+                </div>
+                <button onclick="openExceptionModal()" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shrink-0">Mở công cụ</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cột Tâm lý Học đường: Wellbeing & Chống phụ thuộc AI -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div>
+              <span class="text-xs font-bold text-indigo-700 uppercase">Tư vấn Tâm lý Học đường (Wellbeing)</span>
+              <h3 class="text-base sm:text-lg font-extrabold text-slate-900">Lá chắn Giấc ngủ & Rèn Năng lực Tự chủ</h3>
+              <p class="text-xs text-slate-600 mt-1">Ngăn chặn hội chứng lo âu thông báo đêm khuya và thói quen ỷ lại thụ động vào gợi ý máy móc.</p>
+            </div>
+
+            <div class="space-y-3">
+              <div class="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-200 flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs sm:text-sm font-bold text-slate-900">🌙 Khóa Thông báo Ban đêm (Quiet Hours 21:30 – 06:30)</p>
+                  <p class="text-xs text-slate-600">Giữ toàn bộ chuông nhắc muộn vào hàng đợi phát lúc 06:30 sáng hôm sau.</p>
+                </div>
+                <button id="quietToggleBtn" onclick="toggleQuietHours()" class="text-xs font-extrabold px-3.5 py-2 rounded-xl bg-indigo-700 text-white shrink-0">ĐANG BẬT</button>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs sm:text-sm font-bold text-slate-900">🧠 Chế độ Giảm phụ thuộc AI (Rèn tự giác)</p>
+                  <p class="text-xs text-slate-600">Ẩn nhãn điểm ưu tiên trên Tab Học sinh để học sinh tự xếp thứ tự trước.</p>
+                </div>
+                <button id="selfRegAdminBtn" onclick="toggleSelfReg()" class="text-xs font-extrabold px-3.5 py-2 rounded-xl bg-slate-200 text-slate-700 shrink-0">ĐANG TẮT</button>
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span class="text-xs font-semibold text-slate-700">Kiểm thử phản ứng khi có thông báo nhắc bài mới:</span>
+                <button onclick="simulateIncomingAlert()" class="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-800 text-white">Thử phát chuông nhắc ngay</button>
+              </div>
+
+              <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-slate-700">
+                <b>🛡️ Cơ chế chống kỳ thị & đổ lỗi nhóm:</b> Thanh tiến độ nhóm chỉ hiển thị nội bộ giữa các thành viên (Chí Vinh & Gia Huy) và báo riêng cho giáo viên hỗ trợ kín đáo, tuyệt đối không lập bảng xếp hạng bêu tên trước lớp.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PHÂN KHU 4: HỒ SƠ 7 MTB & BẢNG USER - MINH CHỨNG ==================== -->
+      <section id="sec-mtb" class="hidden space-y-5 fade-in">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div>
+            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">Đồng bộ 100% Báo cáo Word (7 MTB)</span>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">Bảng Đối chiếu Nhu cầu các User — Minh chứng Chức năng Hệ thống</h2>
+            <p class="text-xs text-slate-600">Bấm vào từng nút bên phải để chuyển thẳng tới phân khu minh chứng tương ứng ngay trên ứng dụng:</p>
+          </div>
+          <div id="mtbEvidenceList" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- CỬA SỔ 1: PRE-CHECK HÌNH THỨC & XÁC NHẬN NỘP TỆP NHÁP -->
+  <div id="precheckModal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-3.5">
+      <div class="flex items-start justify-between border-b border-slate-100 pb-2.5">
+        <div>
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Bước gác cổng Pre-check hình thức</span>
+          <h3 id="precheckTitle" class="text-base font-extrabold text-slate-900 mt-1"></h3>
+        </div>
+        <button onclick="closeModal('precheckModal')" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="precheckFileBox" class="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-950 font-medium"></div>
+      <div class="space-y-2 text-xs sm:text-sm text-slate-800" id="precheckItems"></div>
+      <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900">
+        <i class="fa-solid fa-shield-check mr-1"></i><b>Zero-Data Retention:</b> Hệ thống chỉ kiểm tra danh mục hình thức bên ngoài, xóa bộ nhớ đệm ngay sau khi xác nhận nộp và không lưu nội dung bài viết.
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <button onclick="closeModal('precheckModal')" class="text-xs font-semibold px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700">Để kiểm tra lại</button>
+        <button onclick="confirmFinalSubmit()" class="text-xs font-bold px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white">Xác nhận Nộp bài chính thức</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CỬA SỔ 2: CÔNG CỤ GHI CHÚ NGOẠI LỆ 1 CHẠM -->
+  <div id="exceptionModal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="font-extrabold text-slate-900 text-sm sm:text-base">Công cụ Ghi chú Ngoại lệ 1 chạm</h3>
+        <button onclick="closeModal('exceptionModal')" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <p class="text-xs text-slate-500">Dùng khi giáo viên giao đề bằng ảnh chụp bảng mờ hoặc dặn đổi hạn nộp bằng miệng cuối tiết học:</p>
+      <select id="excTaskSelect" class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl px-3 py-2"></select>
+      <input id="excNewDue" type="text" placeholder="Hạn nộp cập nhật mới (VD: Ngày mai, 20:30)" class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl px-3 py-2">
+      <textarea id="excNoteInput" rows="3" placeholder="Ghi chú yêu cầu bổ sung của thầy cô trên lớp..." class="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3"></textarea>
+      <div class="flex justify-end gap-2 pt-1">
+        <button onclick="closeModal('exceptionModal')" class="text-xs font-semibold px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700">Hủy</button>
+        <button onclick="saveExceptionNote()" class="text-xs font-bold px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white">Lưu đồng bộ ngoại lệ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CỬA SỔ 3: HÀNG ĐỢI THÔNG BÁO 06:30 SÁNG & NHẬT KÝ -->
+  <div id="queueModal" class="fixed inset-0 z-40 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="font-extrabold text-slate-900 text-sm sm:text-base"><i class="fa-solid fa-bell text-indigo-700 mr-1.5"></i>Hàng đợi Phát lúc 06:30 Sáng & Nhật ký Hệ thống</h3>
+        <button onclick="closeModal('queueModal')" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="queueItemsList" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
+      <div class="flex justify-end pt-2 border-t border-slate-100">
+        <button onclick="closeModal('queueModal')" class="text-xs font-bold px-4 py-2 rounded-xl bg-blue-900 text-white">Đóng cửa sổ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MÃ NGUỒN ĐIỀU KHIỂN LOGIC ỨNG DỤNG ==================== -->
+  <script>
+    const LEVEL_TEXT = ["Mức 0: Chưa mở đề", "Mức 1: Đã đọc Checklist", "Mức 2: Đang làm nháp", "Mức 3: Đã tải nháp (Chưa bấm Nộp)", "Mức 4: Đang rà soát nhóm", "Mức 5: Đã bấm Nộp hoàn tất"];
+    const ROLE_INFO = {
+      student: { code: "VS045082 (Token: #TK-HS801)", label: "Đang đăng nhập: Lâm Chí Vinh (Học sinh Lớp 8A · Nhóm 1 - 8A7)", defaultSec: "student" },
+      teacher: { code: "GV-VSC-TC (Tổ Bộ môn & GVCN)", label: "Đang đăng nhập: Giáo viên Bộ môn & GVCN (Phụ trách 8A, 8A1–8A3)", defaultSec: "teacher" },
+      admin: { code: "ADMIN-WELLBEING-01", label: "Đang đăng nhập: Chuyên viên Quản trị LMS & Tâm lý Học đường", defaultSec: "admin" }
+    };
+
+    const appState = {
+      selectedRole: "student", clock: "day", quietHours: true, selfReg: false, filter: "all", activePrecheckId: null,
+      tasks: [
+        { id: 1, subject: "Ngữ Văn 8", title: "Bài nghị luận xã hội cuối HK1", due: "21:00 Tối nay", urgent: true, isGroup: false, draftFile: "Nghi_luan_XH_HK1_nhap.docx", forgotSubmit: true, level: 3, estMin: 45, aiRank: "Ưu tiên #1", note: "", checks: ["Đã đính kèm tệp Nghi_luan_XH_HK1_nhap.docx", "Đủ bố cục Mở bài – Thân bài – Kết bài", "Đã rà soát chính tả trước khi khóa cổng"] },
+        { id: 2, subject: "Tin học 8", title: "Dự án 1: Thiết kế & Báo cáo LMS SmartFlow AI", due: "08:00 Sáng mai", urgent: true, isGroup: true, members: "Lâm Chí Vinh (Mức 4) & Nguyễn Nho Gia Huy (Mức 4)", draftFile: "Bao_Cao_LMS_SmartFlow_AI_8A7.docx", forgotSubmit: false, level: 4, estMin: 60, aiRank: "Ưu tiên #2", note: "Nhóm 2 thành viên rà soát bảng Nhiệm vụ 1 Tiết 3–4", checks: ["Đủ 7 MTB theo thứ tự chuẩn", "Bảng đối chiếu User – Minh chứng hệ thống", "Kiểm tra đường dẫn nguyên mẫu hoạt động mượt"] },
+        { id: 3, subject: "Toán 8", title: "Phiếu ôn tập Phân thức đại số & Hình học", due: "Ngày mai, 20:00", urgent: false, isGroup: false, draftFile: "", forgotSubmit: false, level: 2, estMin: 40, aiRank: "Ưu tiên #3", note: "", checks: ["Hoàn thành 10 câu trắc nghiệm", "Trình bày đủ lời giải 2 bài tự luận hình học"] },
+        { id: 4, subject: "Khoa học tự nhiên 8", title: "Báo cáo thí nghiệm Khối lượng riêng & Áp suất", due: "Thứ Sáu, 19:30", urgent: false, isGroup: true, members: "Lâm Chí Vinh & Nguyễn Nho Gia Huy (Nội bộ nhóm)", draftFile: "", forgotSubmit: false, level: 1, estMin: 30, aiRank: "Ưu tiên #4", note: "", checks: ["Điền bảng kết quả đo 3 lần", "Trả lời 3 câu hỏi nhận xét cuối phiếu"] },
+        { id: 5, subject: "Tiếng Anh 8", title: "Luyện nói chủ đề Community Service (Audio)", due: "Thứ Bảy, 17:00", urgent: false, isGroup: false, draftFile: "", forgotSubmit: false, level: 1, estMin: 25, aiRank: "Ưu tiên #5", note: "", checks: ["Tệp ghi âm dài 2–3 phút định dạng MP3", "Đính kèm dàn ý từ khóa (Outline)"] },
+        { id: 6, subject: "Ngữ Văn 8", title: "Soạn phiếu đọc hiểu văn bản Hài kịch", due: "Chủ nhật, 20:00", urgent: false, isGroup: false, draftFile: "", forgotSubmit: false, level: 0, estMin: 20, aiRank: "Ưu tiên #6", note: "", checks: ["Trả lời 5 câu hỏi suy ngẫm trong phiếu LMS"] }
+      ],
+      warnings48h: [
+        { id: 101, student: "Mã #TK-HS804 (Lớp 8A1)", task: "Phiếu ôn tập Toán 8 (Hạn còn 36 giờ)", status: "Mức 0: Chưa mở đề trên LMS", msg: "Chào em, thầy thấy phiếu ôn tập Toán 8 còn 36 giờ là tới hạn nhưng em chưa mở đề. Em có gặp khó khăn gì về tài khoản hay bài học không để thầy hỗ trợ nhé!", sentInfo: "" },
+        { id: 102, student: "Nhóm 3 – Lớp 8A2", task: "Báo cáo KHTN 8 (Hạn còn 42 giờ)", status: "Nghẽn tiến độ ở Mức 1", msg: "Chào Nhóm 3, phần báo cáo thí nghiệm KHTN còn chưa đầy 2 ngày nữa thu bài. Nhóm kiểm tra phân công và nhắn cô nếu cần giải thích thêm số liệu nhé!", sentInfo: "" }
+      ],
+      suppInbox: [
+        { id: 201, cls: "Lớp 8A1", student: "Mã #TK-HS812", task: "Bài nghị luận Ngữ Văn 8", reason: "Tối qua khu dân cư mất mạng Wi-Fi đột xuất, phụ huynh đã nhắn xác nhận, em vừa tải tệp nộp bổ sung lúc 06:45 sáng.", approved: false },
+        { id: 202, cls: "Lớp 8A3", student: "Mã #TK-HS829", task: "Phiếu bài tập Tiếng Anh 8", reason: "Em bị sốt nghỉ tiết chiều qua, nay đã làm bù đầy đủ tệp ghi âm.", approved: false }
+      ],
+      workloadDays: [
+        { day: "Thứ Hai", hours: 2.0, subs: "Toán, Anh" },
+        { day: "Thứ Ba", hours: 2.5, subs: "Văn, KHTN" },
+        { day: "Thứ Tư", hours: 1.8, subs: "Tin học" },
+        { day: "Thứ Năm", hours: 3.8, subs: "Toán, Văn, KHTN, Anh", overloaded: true },
+        { day: "Thứ Sáu", hours: 2.2, subs: "KHTN, Tin" },
+        { day: "Cuối tuần", hours: 2.0, subs: "Ôn tập nhẹ" }
+      ],
+      nightQueue: [
+        { time: "Giữ lúc 22:10 → Phát 06:30", text: "Nhắc lịch nhẹ: Phiếu ôn tập Toán 8 sẽ đến hạn vào tối mai (20:00)." },
+        { time: "Giữ lúc 22:35 → Phát 06:30", text: "Thông báo lớp học: Cô giáo KHTN 8 vừa cập nhật hướng dẫn trình bày bảng số liệu." }
+      ]
+    };
+
+    function toast(msg, tone = "blue") {
+      const el = document.createElement("div");
+      const bg = tone === "emerald" ? "bg-emerald-700" : tone === "amber" ? "bg-amber-700" : "bg-blue-900";
+      el.className = `${bg} text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg fade-in`;
+      el.innerHTML = `<i class="fa-solid fa-circle-check mr-1.5"></i>${msg}`;
+      document.getElementById("toastBox").appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    // Xử lý chọn vai trò & Đăng nhập / Đăng xuất
+    function selectLoginRole(role) {
+      appState.selectedRole = role;
+      ["student", "teacher", "admin"].forEach(r => document.getElementById("card-" + r).classList.toggle("selected", r === role));
+      document.getElementById("loginUserInp").value = ROLE_INFO[role].code;
+    }
+
+    function handleLogin() {
+      const info = ROLE_INFO[appState.selectedRole];
+      document.getElementById("loginScreen").classList.add("hidden");
+      document.getElementById("appWorkspace").classList.remove("hidden");
+      document.getElementById("activeUserLabel").textContent = info.label;
+      switchSection(info.defaultSec);
+      toast(`Đăng nhập thành công! ${info.label}`, "emerald");
+    }
+
+    function handleLogout() {
+      document.getElementById("appWorkspace").classList.add("hidden");
+      document.getElementById("loginScreen").classList.remove("hidden");
+      toast("Đã đăng xuất trở về Cổng chọn vai trò!", "blue");
+    }
+
+    function switchSection(sec) {
+      ["student", "teacher", "admin", "mtb"].forEach(s => {
+        document.getElementById("sec-" + s).classList.toggle("hidden", s !== sec);
+        document.getElementById("tabBtn-" + s).classList.toggle("active", s === sec);
+      });
+      renderAll();
+    }
+
+    function setSimClock(mode) {
+      appState.clock = mode;
+      document.getElementById("clockDayBtn").className = mode === "day" ? "text-xs font-bold px-2.5 py-1.5 rounded-lg bg-amber-500 text-white transition" : "text-xs font-bold px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-white transition";
+      document.getElementById("clockNightBtn").className = mode === "night" ? "text-xs font-bold px-2.5 py-1.5 rounded-lg bg-indigo-800 text-white transition" : "text-xs font-bold px-2.5 py-1.5 rounded-lg text-slate-600 hover:bg-white transition";
+      renderAll();
+      toast(mode === "night" ? "Đồng hồ giả lập: 22:45 Tối (Kích hoạt kiểm tra Giờ nghỉ ngơi)" : "Đồng hồ giả lập: 16:20 Chiều (Giờ học tập bình thường)", mode === "night" ? "amber" : "emerald");
+    }
+
+    function toggleQuietHours() { appState.quietHours = !appState.quietHours; renderAll(); toast(appState.quietHours ? "Đã BẬT Khóa thông báo ban đêm (21:30 – 06:30)" : "Đã TẮT Khóa thông báo ban đêm", "blue"); }
+    function toggleSelfReg() { appState.selfReg = !appState.selfReg; renderAll(); toast(appState.selfReg ? "Đã BẬT Chế độ Rèn tự giác: Ẩn nhãn ưu tiên máy để bạn tự xếp lịch!" : "Đã hiện lại nhãn gợi ý ưu tiên để bạn đối chiếu!", "emerald"); }
+    function setStudentFilter(f) { appState.filter = f; ["all", "group", "draft"].forEach(k => document.getElementById("flt-" + k).classList.toggle("active", k === f)); renderStudent(); }
+
+    // Hiển thị Phân khu 1: Học sinh
+    function renderStudent() {
+      const forgotCnt = appState.tasks.filter(t => t.forgotSubmit && t.level < 5).length;
+      const urgentCnt = appState.tasks.filter(t => t.urgent && t.level < 5).length;
+      document.getElementById("selfRegBadge").textContent = `🧠 Chế độ Rèn tự giác: ${appState.selfReg ? "ĐANG BẬT (Ẩn gợi ý máy)" : "ĐANG TẮT"}`;
+
+      const kpis = [
+        { title: "Tổng nhiệm vụ cuối kỳ", val: `${appState.tasks.length} bài tập`, sub: "Gộp tự động từ 5 lớp LMS", icon: "fa-book-open", col: "blue" },
+        { title: "Bài cần ưu tiên hôm nay", val: `${urgentCnt} nhiệm vụ`, sub: "Hạn tối nay & sáng mai", icon: "fa-bolt", col: "amber" },
+        { title: "Đã tải nháp • Quên bấm Nộp", val: `${forgotCnt} bài`, sub: forgotCnt ? "Ngữ Văn 8 (Hạn 21:00 tối nay!)" : "Đã xác nhận nộp đầy đủ", icon: "fa-triangle-exclamation", col: "rose" },
+        { title: "Thời lượng tự học tối nay", val: "1 giờ 45 phút", sub: "An toàn Wellbeing (≤ 3 giờ/tối)", icon: "fa-clock", col: "emerald" }
+      ];
+      document.getElementById("studentKpiGrid").innerHTML = kpis.map(k => `
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between">
+          <div><p class="text-xs font-semibold text-slate-500">${k.title}</p><p class="text-xl font-extrabold text-slate-900 mt-1">${k.val}</p><p class="text-[11px] text-slate-500 mt-1">${k.sub}</p></div>
+          <div class="w-9 h-9 rounded-xl bg-${k.col}-50 text-${k.col}-700 flex items-center justify-center"><i class="fa-solid ${k.icon}"></i></div>
+        </div>`).join("");
+
+      const draftTask = appState.tasks.find(t => t.forgotSubmit && t.level < 5);
+      document.getElementById("draftWarningBox").innerHTML = draftTask ? `
+        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-bell"></i></div>
+            <div>
+              <span class="text-[11px] font-extrabold uppercase text-amber-800">Phát hiện quên bấm xác nhận nộp • ${draftTask.subject} (${draftTask.due})</span>
+              <h3 class="text-sm sm:text-base font-extrabold text-slate-900">Bạn đã tải tệp nháp <code>${draftTask.draftFile}</code> lên LMS từ 2 giờ trước nhưng CHƯA bấm nút "Nộp bài"!</h3>
+              <p class="text-xs text-slate-700 mt-0.5">Hãy chạy kiểm tra Pre-check hình thức và xác nhận nộp ngay để không bị mất điểm oan.</p>
+            </div>
+          </div>
+          <button onclick="openPrecheck(${draftTask.id})" class="text-xs font-bold px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-sm shrink-0">Chạy Pre-check & Nộp ngay</button>
+        </div>` : "";
+
+      const list = appState.tasks.filter(t => appState.filter === "group" ? t.isGroup : appState.filter === "draft" ? (t.forgotSubmit || t.urgent) : true);
+      document.getElementById("studentTaskList").innerHTML = list.map((t, idx) => `
+        <div class="bg-white p-4 rounded-2xl border ${t.forgotSubmit && t.level < 5 ? 'border-amber-400 ring-1 ring-amber-200' : 'border-slate-200'} shadow-sm flex flex-col justify-between space-y-3">
+          <div class="space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800">${t.subject}</span>
+                ${t.isGroup ? '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Bài nhóm</span>' : ''}
+                ${!appState.selfReg ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">Gợi ý máy: ${t.aiRank}</span>` : '<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800">Bạn tự xếp ưu tiên</span>'}
+              </div>
+              <div class="flex items-center gap-1">
+                <button onclick="moveTask(${t.id}, -1)" title="Đưa lên ưu tiên trước" class="px-2 py-0.5 text-xs rounded border border-slate-200 hover:bg-slate-100">↑</button>
+                <button onclick="moveTask(${t.id}, 1)" title="Đưa xuống sau" class="px-2 py-0.5 text-xs rounded border border-slate-200 hover:bg-slate-100">↓</button>
+              </div>
+            </div>
+            <h3 class="font-extrabold text-slate-900 text-sm sm:text-base">${idx + 1}. ${t.title}</h3>
+            <p class="text-xs text-slate-600">Hạn nộp: <b class="text-slate-900">${t.due}</b> • Ước tính: ${t.estMin} phút ${t.draftFile ? `• Tệp: <code>${t.draftFile}</code>` : ''}</p>
+            ${t.isGroup ? `<p class="text-xs text-indigo-900 bg-indigo-50/70 px-2.5 py-1.5 rounded-lg border border-indigo-100"><i class="fa-solid fa-users mr-1"></i>Nội bộ nhóm: ${t.members}</p>` : ''}
+            ${t.note ? `<p class="text-xs text-amber-900 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-200"><i class="fa-solid fa-thumbtack mr-1"></i><b>Ghi chú ngoại lệ:</b> ${t.note}</p>` : ''}
+            <!-- Thanh tiến độ 5 cấp độ -->
+            <div class="pt-1 space-y-1">
+              <div class="flex justify-between text-xs font-bold"><span class="text-blue-900">${LEVEL_TEXT[t.level]}</span><span>Cấp ${t.level}/5</span></div>
+              <div class="grid grid-cols-5 gap-1">
+                ${[1,2,3,4,5].map(lv => `<button onclick="setTaskLevel(${t.id}, ${lv})" class="h-2 rounded-full transition ${t.level >= lv ? (t.level === 5 ? 'bg-emerald-500' : 'bg-blue-700') : 'bg-slate-200 hover:bg-slate-300'}" title="Chuyển tới Cấp ${lv}"></button>`).join("")}
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+            <button onclick="setTaskLevel(${t.id}, Math.min(5, ${t.level + 1}))" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700">Tăng mức tiến độ (+1)</button>
+            <button onclick="openPrecheck(${t.id})" class="text-xs font-bold px-3.5 py-1.5 rounded-xl ${t.level === 5 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-900 hover:bg-blue-800 text-white'}">${t.level === 5 ? '✓ Đã bấm Nộp' : 'Pre-check & Nộp bài'}</button>
+          </div>
+        </div>`).join("");
+    }
+
+    function moveTask(id, dir) {
+      const i = appState.tasks.findIndex(t => t.id === id);
+      const target = i + dir;
+      if (target < 0 || target >= appState.tasks.length) return;
+      [appState.tasks[i], appState.tasks[target]] = [appState.tasks[target], appState.tasks[i]];
+      renderStudent(); toast("Đã cập nhật thứ tự ưu tiên theo quyết định của bạn!", "emerald");
+    }
+
+    function setTaskLevel(id, lv) {
+      const t = appState.tasks.find(x => x.id === id);
+      t.level = lv; if (lv === 5) t.forgotSubmit = false;
+      renderAll(); toast(`Đã cập nhật "${t.title}" sang ${LEVEL_TEXT[lv]}`, "blue");
+    }
+
+    // Hiển thị Phân khu 2: Giáo viên & GVCN
+    function renderTeacher() {
+      document.getElementById("earlyWarningContainer").innerHTML = appState.warnings48h.map(w => `
+        <div class="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200 space-y-2">
+          <div class="flex justify-between text-xs font-bold"><span class="text-slate-900">${w.student} — ${w.task}</span><span class="text-amber-800">${w.status}</span></div>
+          <textarea id="warnMsg-${w.id}" rows="2" class="w-full text-xs border border-slate-300 rounded-lg p-2 bg-white text-slate-700">${w.msg}</textarea>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-emerald-700">${w.sentInfo}</span>
+            <button onclick="sendTeacherWarn(${w.id})" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-800 text-white">Duyệt & Gửi lời nhắc khích lệ</button>
+          </div>
+        </div>`).join("");
+
+      document.getElementById("suppInboxContainer").innerHTML = appState.suppInbox.map(s => `
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <div class="flex justify-between text-xs font-bold"><span class="text-blue-900">${s.cls} • ${s.student}</span><span class="${s.approved ? 'text-emerald-700' : 'text-amber-700'}">${s.approved ? '✓ Đã duyệt nộp bù' : 'Chờ GV xác nhận'}</span></div>
+          <p class="text-xs font-bold text-slate-900">Bài nộp: ${s.task}</p>
+          <p class="text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-200"><b>Lý do cá nhân:</b> ${s.reason}</p>
+          ${!s.approved ? `<button onclick="approveSupp(${s.id})" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white">Xác nhận nộp bổ sung (Không trừ điểm)</button>` : ''}
+        </div>`).join("");
+
+      document.getElementById("workloadMapGrid").innerHTML = appState.workloadDays.map((d, idx) => `
+        <div class="p-3 rounded-xl border ${d.hours > 3.0 ? 'bg-rose-50 border-rose-300' : 'bg-slate-50 border-slate-200'} space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold"><span>${d.day}</span><span class="${d.hours > 3.0 ? 'text-rose-700' : 'text-emerald-700'}">${d.hours.toFixed(1)}h</span></div>
+          <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden"><div class="h-full ${d.hours > 3.0 ? 'bg-rose-600' : 'bg-emerald-500'}" style="width:${Math.min(100, d.hours * 22)}%"></div></div>
+          <p class="text-[11px] text-slate-600">Môn: ${d.subs}</p>
+          ${d.hours > 3.0 ? `<button onclick="balanceWorkload(${idx})" class="w-full text-[11px] font-bold py-1 rounded bg-rose-600 hover:bg-rose-700 text-white">Đề xuất giãn 1 môn sang Thứ Sáu</button>` : '<span class="block text-[11px] text-emerald-700 font-semibold">✓ Trong ngưỡng ≤ 3,0h</span>'}
+        </div>`).join("");
+    }
+
+    function sendTeacherWarn(id) {
+      const w = appState.warnings48h.find(x => x.id === id);
+      w.msg = document.getElementById("warnMsg-" + id).value.trim();
+      if (appState.clock === "night" && appState.quietHours) {
+        appState.nightQueue.unshift({ time: "GV gửi lúc 22:45 → Phát 06:30", text: `[Tới ${w.student}]: ${w.msg}` });
+        w.sentInfo = "🌙 Đã giữ vào hàng đợi phát lúc 06:30 sáng!";
+        toast("Đang sau 21:30 tối: Hệ thống đã giữ lời nhắc vào hàng đợi 06:30 sáng!", "amber");
+      } else {
+        w.sentInfo = "✓ Đã gửi lời nhắc khích lệ lúc 16:20 chiều!";
+        toast(`Đã gửi lời nhắc tích cực tới ${w.student}!`, "emerald");
+      }
+      renderAll();
+    }
+
+    function approveSupp(id) { appState.suppInbox.find(x => x.id === id).approved = true; renderTeacher(); toast("Giáo viên đã xác nhận bài nộp bổ sung công tâm!", "emerald"); }
+    function balanceWorkload(idx) { appState.workloadDays[idx].hours = 2.8; appState.workloadDays[idx + 1].hours = 2.9; renderTeacher(); toast("Đã điều phối giãn hạn nộp về dưới ngưỡng an toàn 3,0 giờ/tối!", "emerald"); }
+
+    // Hiển thị Phân khu 3 & 4
+    function renderAdminAndMtb() {
+      const isNightBlocked = appState.clock === "night" && appState.quietHours;
+      document.getElementById("nightShieldBanner").classList.toggle("hidden", !isNightBlocked);
+      document.getElementById("queueCountBadge").textContent = appState.nightQueue.length;
+      document.getElementById("quietToggleBtn").textContent = appState.quietHours ? "ĐANG BẬT" : "ĐANG TẮT";
+      document.getElementById("quietToggleBtn").className = appState.quietHours ? "text-xs font-extrabold px-3.5 py-2 rounded-xl bg-indigo-700 text-white shrink-0" : "text-xs font-extrabold px-3.5 py-2 rounded-xl bg-slate-200 text-slate-700 shrink-0";
+      document.getElementById("selfRegAdminBtn").textContent = appState.selfReg ? "ĐANG BẬT" : "ĐANG TẮT";
+      document.getElementById("selfRegAdminBtn").className = appState.selfReg ? "text-xs font-extrabold px-3.5 py-2 rounded-xl bg-emerald-700 text-white shrink-0" : "text-xs font-extrabold px-3.5 py-2 rounded-xl bg-slate-200 text-slate-700 shrink-0";
+
+      const mtbCards = [
+        { code: "MTB 1.1.b", name: "Phân quyền Tư duy Người – Máy", desc: "HS tự đổi thứ tự ↑↓, Rèn tự giác & Ghi chú ngoại lệ; GV giữ 100% quyền gia hạn.", sec: "student" },
+        { code: "MTB 1.1.c", name: "Pháp lý Riêng tư & Sở hữu trí tuệ", desc: "Mã hóa định danh trẻ em #TK-HS801, Zero-Data Retention & không bêu tên công khai.", sec: "admin" },
+        { code: "MTB 1.1.d", name: "Kinh tế – Xã hội & Wellbeing", desc: "Vận hành quy tắc nhẹ trình duyệt, ngưỡng ≤ 3 giờ/tối & Khóa thông báo đêm 21:30–06:30.", sec: "admin" },
+        { code: "MTB 1.2.a", name: "6 User Story cho 3 Nhóm đối tượng", desc: "Đáp ứng đủ nhu cầu Học sinh cá nhân/nhóm, Giáo viên & Nhân viên Quản trị/Wellbeing.", sec: "teacher" },
+        { code: "MTB 1.2.b", name: "Quản trị Hợp tác Agile (3 Sprint)", desc: "Phối hợp Lâm Chí Vinh & Nguyễn Nho Gia Huy trên Miro và triển khai GitHub Pages.", sec: "mtb" },
+        { code: "MTB 1.3.d", name: "Thiết kế Hệ thống (Tiết 3–4 Lesson 1.3)", desc: "Đủ 3 bảng Nhiệm vụ 1, luồng 5 bước và nâng cấp từ Prototype V1 lên Prototype V2.", sec: "student" },
+        { code: "MTB 1.3.e", name: "Bảng User – Minh chứng & Phản biện", desc: "Đối chiếu trực tiếp yêu cầu từng User với chức năng thật và nêu rõ giới hạn bản mẫu.", sec: "teacher" }
+      ];
+      document.getElementById("mtbEvidenceList").innerHTML = mtbCards.map(m => `
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2">
+          <div><span class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-blue-900 text-white">${m.code}</span><h4 class="font-bold text-slate-900 text-sm mt-1.5">${m.name}</h4><p class="text-xs text-slate-600 mt-1">${m.desc}</p></div>
+          <button onclick="switchSection('${m.sec}')" class="self-start text-xs font-bold text-blue-800 hover:underline mt-1">Mở phân khu minh chứng →</button>
+        </div>`).join("");
+
+      document.getElementById("queueItemsList").innerHTML = appState.nightQueue.map(q => `
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+          <span class="font-bold text-indigo-800">${q.time}</span><p class="text-slate-800">${q.text}</p>
+        </div>`).join("");
+    }
+
+    function simulateIncomingAlert() {
+      if (appState.clock === "night" && appState.quietHours) {
+        appState.nightQueue.unshift({ time: "Chặn lúc 22:45 → Phát 06:30", text: "Thử nghiệm chuông nhắc tự động: Đã bị Lá chắn Wellbeing giữ lại để bảo vệ giấc ngủ!" });
+        renderAll(); toast("Lá chắn 21:30 ĐANG BẬT: Đã chặn chuông đêm và đưa vào hàng đợi 06:30 sáng!", "amber");
+      } else {
+        toast("Đồng hồ trong giờ học (hoặc đang tắt khóa đêm): Thông báo nhắc bài hiển thị bình thường!", "emerald");
+      }
+    }
+
+    // Các cửa sổ Modal tương tác
+    function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
+    function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+    function openPrecheck(taskId) {
+      appState.activePrecheckId = taskId;
+      const t = appState.tasks.find(x => x.id === taskId);
+      document.getElementById("precheckTitle").textContent = `${t.subject}: ${t.title}`;
+      document.getElementById("precheckFileBox").innerHTML = `Tệp kiểm tra: <b>${t.draftFile || "Tệp_bai_lam_LMS.docx"}</b> • Hạn nộp: <b>${t.due}</b>`;
+      document.getElementById("precheckItems").innerHTML = t.checks.map(c => `<label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200"><input type="checkbox" checked class="rounded text-blue-900"><span>${c}</span></label>`).join("");
+      openModal("precheckModal");
+    }
+
+    function confirmFinalSubmit() {
+      const t = appState.tasks.find(x => x.id === appState.activePrecheckId);
+      t.level = 5; t.forgotSubmit = false;
+      closeModal("precheckModal"); renderAll();
+      toast(`Đã xác nhận nộp "${t.title}" thành công & xóa bộ nhớ đệm Pre-check!`, "emerald");
+    }
+
+    function openExceptionModal() {
+      document.getElementById("excTaskSelect").innerHTML = appState.tasks.map(t => `<option value="${t.id}">${t.subject} — ${t.title}</option>`).join("");
+      openModal("exceptionModal");
+    }
+
+    function saveExceptionNote() {
+      const id = Number(document.getElementById("excTaskSelect").value);
+      const t = appState.tasks.find(x => x.id === id);
+      const dueVal = document.getElementById("excNewDue").value.trim();
+      const noteVal = document.getElementById("excNoteInput").value.trim();
+      if (dueVal) t.due = dueVal;
+      t.note = noteVal || "Đã đồng bộ tay thay đổi của giáo viên trên lớp.";
+      document.getElementById("excNewDue").value = ""; document.getElementById("excNoteInput").value = "";
+      closeModal("exceptionModal"); switchSection("student");
+      toast("Đã lưu ghi chú ngoại lệ 1 chạm vào nhiệm vụ!", "emerald");
+    }
+
+    function renderAll() { renderStudent(); renderTeacher(); renderAdminAndMtb(); }
+    window.onload = () => { selectLoginRole("student"); renderAll(); };
+  </script>
+</body>
+</html>
